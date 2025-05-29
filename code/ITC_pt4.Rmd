@@ -1,0 +1,209 @@
+---
+title: "ITC pt4"
+author: "Fayre-Ella Ooi"
+date: "2025-04-14"
+output: pdf_document
+---
+```{r}
+
+# data set
+CircuitOutage = read.csv(file = "/Users/fayreooi/Desktop/circuitWRegions.csv")
+LookUp = read.csv(file = "/Users/fayreooi/Downloads/LookUpUpdate.csv")
+
+
+library(dplyr)
+
+df = left_join(CircuitOutage, LookUp, by = "Circuit.Name")
+
+# clean
+
+# make values numerical 
+df$Outage.Duration..min. = as.numeric(gsub(",", "", df$Outage.Duration..min.))
+df$Customers.Affected = as.numeric(gsub(",", "", df$Customers.Affected))
+df$Customer.Count = as.numeric(gsub(",", "", df$Customer.Count))
+
+LookUp$Customer.Count = as.numeric(gsub(",", "", LookUp$Customer.Count))
+
+
+# drop unnecessary columns 
+df = df[, !(names(df) %in% c("Region.x", "X", "Circuit.Number.y"))]
+
+# add new column 
+df$Percentage.Customers.Affected = df$Customers.Affected / df$Customer.Count 
+
+#
+
+```
+
+
+
+```{r}
+# find the mean outage duration per outage cause 
+sort(tapply(df$Outage.Duration..min., df$Outage.Cause, mean))
+# - operation has the longest mean outage duration
+
+# find the amount of outages per outage cause 
+sort(tapply(df$Outage.Duration..min., df$Outage.Cause, length))
+# UG equipment failure has the most amount of outages 
+
+# make dataframe of outage causes and average outage duration
+df1 = matrix(c(452, 620.2941, 709.6667, 732.0909, 740.9167, 885, 906.2857, 
+               960.8),
+             nrow = 1, ncol = 8,
+             dimnames = list(rownames = c("Average Outage Duration"),
+                             colnames = c("Vegetation", "OH Equipment Failure",
+                                          "Weather", "Other", "UG Equipment Failure",
+                                          "Third Party", "Animal", "Operation")))
+
+# plot data 
+barplot(df1,
+        main = "Average Outage Duration by Cause",
+        ylab = "Average Duration (Minutes)",
+        las = 2,
+        col = "darkred",       
+        cex.names = 0.8)        
+
+# perform chisquare test
+X2.OD.cause = chisq.test(df1)
+X2.OD.cause$expected
+X2.OD.cause$residuals
+X2.OD.cause$p.value
+
+# causes matter
+# specifically operation, animal, and third party
+```
+```{r}
+
+# outage duration per region
+tapply(df$Outage.Duration..min., df$Region.y, mean)
+
+# make dataframe
+df2 = matrix(c(892.8571, 576.5556, 760, 730.3226),
+             ncol = 4, nrow = 1,
+             dimnames = list(rownames = c("Average Outage Duration"),
+                             colnames = c("Coastal", "Desert", "Mountain", "North")))
+
+# barplot of data
+barplot(df2,
+        main = "Average Outage Duration by Region",
+        ylab = "Outage Duration (min)",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+# perform chisquare test
+X2.OD.regions = chisq.test(df2)
+X2.OD.regions$expected
+X2.OD.regions$residuals
+X2.OD.regions$p.value
+
+```
+```{r}
+
+# FOCUS: COASTAL
+temp = subset(df, Region.y %in% c("Coastal"))
+
+tapply(temp$Outage.Duration..min., temp$Circuit.Name, mean)
+
+df.coastal = matrix(c(713.4286, 919, 915.3333, 840.3333, 1025),
+                    ncol = 5, nrow = 1,
+                    dimnames = list(rownames = c("Average Outage Duration"),
+                                    colnames = c("Dinan", "Green", "Jefferson",
+                                                 "Orange", "Roosevelt")))
+
+# barplot of data
+barplot(df.coastal,
+        main = "Average Outage Duration by Coastal Region Circuits",
+        ylab = "Outage Duration (min)",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+# perform chisquare test
+X2.OD.coastal = chisq.test(df.coastal)
+X2.OD.coastal$expected
+X2.OD.coastal$residuals
+X2.OD.coastal$p.value
+  
+```
+```{r}
+# FOCUS: DESERT
+temp = subset(df, Region.y %in% c("Desert"))
+
+tapply(temp$Outage.Duration..min., temp$Circuit.Name, mean)
+
+df.desert = matrix(c(768.5, 411, 590.6667, 615.5, 470.75),
+                    ncol = 5, nrow = 1,
+                    dimnames = list(rownames = c("Average Outage Duration"),
+                                    colnames = c("Adams", "Blue Jay", "Gorilla",
+                                                 "Monterey", "Oregon")))
+
+# barplot of data
+barplot(df.desert,
+        main = "Average Outage Duration by Desert Region Circuits",
+        ylab = "Outage Duration (min)",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+# perform chisquare test
+X2.OD.desert = chisq.test(df.desert)
+X2.OD.desert$expected
+X2.OD.desert$residuals
+X2.OD.desert$p.value
+```
+```{r}
+
+# FOCUS: MOUNTAIN
+temp = subset(df, Region.y %in% c("Mountain"))
+
+tapply(temp$Outage.Duration..min., temp$Circuit.Name, mean)
+
+df.mountain = matrix(c(975, 660.3333, 72, 695.3333, 759.7, 1341.5),
+                    ncol = 6, nrow = 1,
+                    dimnames = list(rownames = c("Average Outage Duration"),
+                                    colnames = c("Grand", "Johnson", "Lightning",
+                                                 "Lincoln", "Magenta", "Thunder")))
+
+# barplot of data
+barplot(df.mountain,
+        main = "Average Outage Duration by Mountain Region Circuits",
+        ylab = "Outage Duration (min)",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+# perform chisquare test
+X2.OD.mountain = chisq.test(df.mountain)
+X2.OD.mountain$expected
+X2.OD.mountain$residuals
+X2.OD.mountain$p.value
+
+```
+```{r}
+# FOCUS: NORTH
+temp = subset(df, Region.y %in% c("North"))
+
+tapply(temp$Outage.Duration..min., temp$Circuit.Name, mean)
+
+df.north = matrix(c(518.25, 845.4286, 681.1, 979, 700.1429),
+                    ncol = 5, nrow = 1,
+                    dimnames = list(rownames = c("Average Outage Duration"),
+                                    colnames = c("Alabama", "Hoover", "Logan",
+                                                 "Washington", "Yellow")))
+
+# barplot of data
+barplot(df.north,
+        main = "Average Outage Duration by North Region Circuits",
+        ylab = "Outage Duration (min)",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+# perform chisquare test
+X2.OD.north = chisq.test(df.north)
+X2.OD.north$expected
+X2.OD.north$residuals
+X2.OD.north$p.value
+```
+

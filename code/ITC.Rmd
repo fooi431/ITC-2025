@@ -1,0 +1,343 @@
+---
+title: "ITC Pt 1"
+author: "Fayre-Ella Ooi"
+date: "2025-04-09"
+output: pdf_document
+---
+
+```{r}
+
+# data set
+CircuitOutage = read.csv(file = "/Users/fayreooi/Desktop/circuitWRegions.csv")
+LookUp = read.csv(file = "/Users/fayreooi/Downloads/LookUpUpdate.csv")
+
+library(dplyr)
+
+df = left_join(CircuitOutage, LookUp, by = "Circuit.Name")
+
+# clean
+
+# make values numerical 
+df$Outage.Duration..min. = as.numeric(gsub(",", "", df$Outage.Duration..min.))
+df$Customers.Affected = as.numeric(gsub(",", "", df$Customers.Affected))
+df$Customer.Count = as.numeric(gsub(",", "", df$Customer.Count))
+
+# drop unnecessary columns 
+df = df[, !(names(df) %in% c("Region.x", "X", "Circuit.Number.y"))]
+
+# add new column 
+df$Percentage.Customers.Affected = df$Customers.Affected / df$Customer.Count 
+
+```
+
+```{r}
+
+# find the mean of customers affected per region
+tapply(df$Customers.Affected, df$Region.y, mean)
+
+# put the means into a dataframe
+df2 = matrix(c(1003.1071, 923.8333, 1111.4348, 1183.6129),
+             ncol = 4, nrow = 1,
+             dimnames = list( rownames = c("Average Customers Affected"),
+                              colnames = c("Coastal", "Desert", "Mountain", "North")))
+
+# barplot of average customers affected per region
+barplot(df2, 
+        main = "Average Customers Affected by Region",
+        ylab = "Average Customers Affected",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+boxplot(Customers.Affected ~ Region.y, data = df,
+        col = "maroon")
+
+# perform chisquare test 
+X2.CA.region = chisq.test(df2)
+X2.CA.region$expected
+X2.CA.region$residuals
+X2.CA.region$p.value
+
+# p-value is less than alpha = 0.05
+# H0: amount of customers affected is evenly distributed among the regions
+# H1: not H0
+# reject the null:
+# so the region of outages matter
+
+```
+```{r}
+
+# focus: COASTAL
+df3 = subset(df, Region.y %in% c("Coastal"))
+
+# find the mean of amt of customers affected per circuit name 
+tapply(df3$Customers.Affected, df3$Circuit.Name, mean)
+
+# put means into dataframe
+df.coastal = matrix(c(1512.5714, 1683.1667, 883, 845.6667, 246),
+                    ncol = 5, nrow = 1, 
+                    dimnames = list(rownames = c("Average Customers Affected"),
+                                    colnames = c("Dinan", "Green", "Jefferson", 
+                                                 "Orange", "Roosevelt")))
+
+# barplot of amt of customers affected per coastal circuit names
+barplot(df.coastal,
+        main = "Average Customers Affected by Coastal Region Circuits",
+        ylab = "Average Customers Affected", 
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+# run chisquare test 
+X2.coastal.CA = chisq.test(df.coastal)
+X2.coastal.CA$expected
+X2.coastal.CA$residuals
+X2.coastal.CA$p.value
+
+# p-val < alpha
+# reject the null
+# so circuit name with region of coastal matters
+
+```
+```{r}
+
+# focus: MOUNTAIN
+df4 = subset(df, Region.y %in% c("Mountain"))
+
+# find mean of amount customers affected 
+tapply(df4$Customers.Affected, df4$Circuit.Name, mean)
+
+# put means into dataframe
+df.mountain = matrix(c(243, 929, 1201, 627.1667, 1425.1, 1658),
+                     nrow = 1, ncol = 6,
+                     dimnames = list(rownames = c("Average Customers Affected"),
+                                     colnames = c("Grand", "Johnson", "Lightning", 
+                                                  "Lincoln", "Magenta", "Thunder")))
+
+#barplot of avg customers affected per mountain circuit names
+barplot(df.mountain, 
+        main = "Average Customers Affected by Mountain Region Circuits",
+        ylab = "Average Customers Affected", 
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+# perform chi square test
+X2.mountain.CA = chisq.test(df.mountain)
+X2.mountain.CA$expected
+X2.mountain.CA$residuals
+X2.mountain.CA$p.value
+
+# p-val < alpha
+# circuit name within region of mountains matter
+
+```
+```{r}
+
+# dataset with just significant circuit names based on customers affected
+df7 = subset(df, Circuit.Name %in% c("Green", "Dinan", "Alabama", "Logan",
+                                     "Magenta", "Thunder", "Lightning", "Gorilla",
+                                     "Blue Jay"))
+
+# average customers affected 
+sort(tapply(df7$Customers.Affected, df7$Circuit.Name, mean))
+
+```
+
+```{r}
+
+# dataset of just avg customers affects vs circuit name 
+df8 = matrix(c(1201, 1203.111, 1412.2, 1425.1, 1512.571, 1658, 1683.167, 1962,
+               2465),
+             nrow = 1, ncol = 9,
+             dimnames = list(rownames = c("Average Customers Affected"),
+                             colnames = c("Lightning", "Gorilla", "Logan", "Magenta",
+                                          "Dinan", "Thunder", "Green", "Blue Jay",
+                                          "Alabama")))
+
+# plot data
+barplot(df8,
+        main = "Top 9 Average Customers Affected by Circuit Name",
+        ylab = "Average Customers Affected",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+X2.CA.top9 = chisq.test(df8)
+X2.CA.top9$expected
+X2.CA.top9$residuals
+X2.CA.top9$p.value
+
+# ALABAMA AND BLUE JAY ARE THE MOST PROBLEMATIC CIRCUITS IN TERMS OF CUSTOMERS AFFECTED.
+
+```
+
+```{r}
+
+# average customers affected from ALL circuit names
+sort(tapply(df$Customers.Affected, df$Circuit.Name, mean))
+
+# put into dataset
+df9 = matrix(c(243, 246, 472, 477, 497, 627.1667, 718.5714, 746.7143, 817.6667, 
+               845.6667, 883, 929.6667, 1201, 1203.1111, 1412.2, 1425.1, 1512.5714,  
+               1658, 1683.1667, 1962, 2465),
+             ncol = 21, nrow = 1,
+             dimnames = list(rownames = c("Average Customers Affected"),
+                             colnames = c("Grand", "Roosevelt", "Oregon", "Adams",
+                                          "Monterey", "Lincoln", "Hoover", 
+                                          "Yellow", "Washinton", "Orange",
+                                          "Jefferson", "Johnson", "Lightning", 
+                                          "Gorilla", "Logan", "Magenta", "Dinan", 
+                                          "Thunder", "Green", "Blue Jay", "Alabama")))
+
+# barplot 
+barplot(df9, 
+        main = "Average Customers Affected by Circuit Name",
+        ylab = "Average Customers Affected",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+```
+```{r}
+
+df10 = subset(df, Region.y %in% c("North"))
+
+tapply(df10$Customers.Affected, df10$Circuit.Name, mean)
+
+df.north = matrix(c(2465.0000, 718.5714, 1412.2000, 817.6667, 746.7143), nrow=1, ncol=5, byrow=T, 
+                  dimnames=list(c("Customers Affected"),c("Alabama","Hoover","Logan","Washington"," Yellow")))
+df.north
+chi.north = chisq.test(df.north)
+chi.north$exp
+chi.north$residuals
+chi.north$p.value
+
+barplot(df.north,
+        main = "Average Customers Affected by North Region Circuits",
+        ylab = "Average Customers Affected",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+
+```
+```{r}
+
+df11 = subset(df, Region.y %in% c("Desert"))
+
+tapply(df11$Customers.Affected, df11$Circuit.Name, mean)
+
+df.desert = matrix(c(477.000, 1962.000, 1203.111 , 497.000, 472.750 ), nrow=1, ncol=5, byrow=T, 
+                  dimnames=list(c("Customers Affected"),c("Adams","Blue Jay","Gorilla","Monterey"," Oregon")))
+df.desert
+chi.desert = chisq.test(df.desert)
+chi.desert$exp
+chi.desert$residuals
+chi.desert$p.value
+
+barplot(df.desert,
+        main = "Average Customers Affected by Desert Region Circuits",
+        ylab = "Average Customers Affected",
+        las = 2,
+        col = "darkred",
+        cex.names = 0.8)
+```
+```{r}
+
+## ANALYSIS OF THE TOP 9 CIRCUITS
+# look at the average outage duration of each
+
+df.top9 = subset(df, Circuit.Name %in% c("Lightning","Gorilla","Logan","Magenta","Dinan","Thunder","Green","Blue Jay","Alabama"))
+
+tapply(df.top9$Outage.Duration..min., df.top9$Circuit.Name, mean)
+
+df.top9.OD =(matrix(c(518.2500, 411.0000, 713.4286, 590.6667, 919.0000, 72.0000, 681.1000, 759.7000, 1341.5000), nrow=1, ncol=9, byrow=T, 
+                  dimnames=list(c("Outage Duration"),c("Alabama","Blue Jay","Dinan","Gorilla"," Green","Lightning","Logan","Magenta","Thunder"))))
+df.top9.OD
+chi.topOD = chisq.test(df.top9.OD)
+chi.topOD$exp
+chi.topOD$residuals
+chi.topOD$p.value
+
+barplot(df.top9.OD,
+        main = "Average Outage Duration by Top 9 Circuits",
+        ylab = "Average Outage Duration (min)",
+        col = "darkred",
+        las = 2,
+        cex.names =0.8)
+
+```
+
+```{r}
+
+table.top9.1 = xtabs(Customers.Affected ~ Outage.Cause + Circuit.Name, data = df.top9)
+
+library(ggplot2)
+library(reshape2) 
+
+long_table = melt(table.top9.1, id.vars = "Outage.Cause", variable.name = "Circuit.Name", value.name = "Total")
+
+ggplot(long_table, aes(x = Circuit.Name, y = Outage.Cause, fill = Total)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "white", high = "darkred") +
+  theme_minimal() +
+  labs(x = "Circuit Name", y = "Outage Cause")
+
+```
+
+
+```{r}
+
+# circuit causes by top 9 circuits
+
+library(dplyr)
+
+table.top9 = xtabs(Outage.Duration..min. ~ Outage.Cause + Circuit.Name, data = df.top9)
+
+library(ggplot2)
+library(reshape2) 
+
+long_table = melt(table.top9, id.vars = "Outage.Cause", variable.name = "Circuit.Name", value.name = "Total")
+
+ggplot(long_table, aes(x = Circuit.Name, y = Outage.Cause, fill = Total)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "white", mid = "pink", high = "darkred") +
+  theme_minimal() +
+  labs(title = "Heatmap of Outage Duration by Circuit Name and Outage Cause", 
+       x = "Circuit Name", y = "Outage Cause")
+
+X2.top9.1 = chisq.test(table.top9)
+X2.top9.1$expected
+
+# test independency between Circuit Name and Outage Cause 
+
+#chisquare test to stimulate p val 
+X2.top9.2 = chisq.test(table.top9, simulate.p.value = TRUE, B = 10000)
+
+#G2 test
+library(DescTools)
+GTest(table.top9)
+
+# H0: circuit name and outage cause are independent
+# low pval < 2.2e^-16 so reject the null 
+# so there is a statistically significant relationship between circuit name and outage 
+# in terms of outage duration 
+
+# start partitioning based on residual
+X2.top9.2$residuals
+resid_df = as.data.frame(as.table(X2.top9.2$residuals))
+
+#heatmap for residuals 
+ggplot(resid_df, aes(x = Circuit.Name, y = Outage.Cause, fill = Freq)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "white", mid = "pink", high = "darkred", midpoint = 0) +
+  theme_minimal() +
+  labs(title = "Pearson Residuals from Chi-square Test")
+
+# most significance found in Green and UG Equipment Failure, Operation and Logan,
+# Animal and Blue Jay 
+
+```
+
+
+
+

@@ -1,0 +1,92 @@
+---
+title: "ITC Pt. 2"
+author: "Fayre-Ella Ooi"
+date: "2025-04-18"
+output: pdf_document
+---
+
+```{r}
+
+#dataset 
+LookUp = read.csv(file = "/Users/fayreooi/Downloads/LookUpUpdate.csv")
+LookUp = LookUp[, -c(11,12,13,14,15)]
+
+## clean dataset
+
+# make numbers numerical
+LookUp$Customer.Count = as.numeric(gsub(",", "", LookUp$Customer.Count))
+
+# interpreting SAIDI add a column to dataset showing average minutes  
+LookUp$Avg.Min.PerCustomer.2023 = LookUp$X2023.SAIDI * 60
+
+# adding CAIDI 
+# LookUp$CAIDI.2023 = LookUp$X2023.SAIDI / LookUp$X2023.SAIFI
+
+# dataset
+CircuitOutage = read.csv(file = "/Users/fayreooi/Desktop/circuitWRegions.csv")
+CircuitOutage$Outage.Duration..min. = as.numeric(gsub(",", "", CircuitOutage$Outage.Duration..min.))
+
+# add information from circuit outage dataset
+# we want to add the CMI from 2024
+
+#add number of circuit outages in 2024
+LookUp$Number.Outages.2024 = c(3, 4, 6, 4, 7, 3, 6, 3, 10, 2, 9, 3, 9, 1, 2, 1, 7, 2, 10, 1, 7)
+
+## SAIDI for 2024
+
+LookUp$Avg.Outage.Duration.2024 = c(840.333, 518.25, 919, 470.75, 700.1429, 979, 695.333, 
+                                    660.333, 759.7, 768.5, 1025, 915.333, 590.6667, 
+                                    411, 1341.5, 72, 845.4286, 615.5, 681.1, 975,
+                                    713.4286) 
+
+LookUp$SAIDI.2024 = LookUp$Avg.Outage.Duration.2024 / LookUp$Customer.Count
+
+# SAIFI for 2024
+
+tapply(CircuitOutage$Customers.Affected, CircuitOutage$Circuit.Name, mean)
+
+LookUp$Avg.Customers.Affected.2024 = c(846, 2465, 1684, 473 ,747, 818, 628, 930, 1426,
+                                       477, 246, 883, 1204, 1962, 1658, 1201, 719, 
+                                       497,1413, 243, 1513)
+
+LookUp$SAIFI.2024 = LookUp$Number.Outages.2024 / LookUp$Customer.Count
+
+# add column of how many miles are overhead/underground
+
+LookUp$Overhead.miles = LookUp$Circuit.Miles * (LookUp$X..Overhead/100)
+LookUp$Underground.miles = LookUp$Circuit.Miles * (LookUp$X..Underground/100)
+
+# adding cause count to Look Up data
+
+LookUp$UG.Equipment.Failure = c(0,3,4,0,0,0,3,0,0,0,4,1,1,0,1,0,4,1,0,0,2)
+LookUp$OH.Equipment.Failure = c(0,0,0,1,2,0,0,1,3,0,0,0,4,0,0,0,0,0,4,1,1)
+LookUp$Third.Party = c(1,1,0,1,0,1,2,1,1,0,0,1,1,0,1,0,0,0,1,0,2)
+LookUp$Weather = c(1,0,1,2,1,1,0,0,3,0,1,0,1,0,0,0,0,0,1,0,0)
+LookUp$Other = c(1,0,1,0,1,0,0,0,1,0,1,0,2,0,0,1,1,1,0,0,1)
+LookUp$Operation = c(0,0,0,0,2,0,1,0,1,1,2,0,0,0,0,0,1,0,2,0,0)
+LookUp$Animal = c(0,0,0,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,1)
+LookUp$Vegetation = c(0,0,0,0,1,0,0,1,0,1,0,1,0,0,0,0,0,0,1,0,0)
+
+# add average minutes per customer for 2024
+LookUp$Avg.Min.PerCustomer.2024 = LookUp$SAIDI.2024 * 60
+
+# make KV into categories
+# LookUp$KV = factor(LookUp$KV,
+#                      levels = c(4, 12, 16),
+#                      labels = c("Four", "Twelve", "Sixteen"))
+
+# add TOTAL outage duration per circuit in 2024
+
+tapply(CircuitOutage$Outage.Duration..min. , CircuitOutage$Circuit.Name, sum)
+LookUp$Total.Outage.Duration = c(2521, 2073, 5514, 1883, 4901, 2937, 4172, 1981, 
+                                 7597, 1537,9225, 2746, 5316, 411, 2683, 71, 5918,
+                                 1231, 6811,975,4994)
+
+```
+```{r}
+
+Avg.min.PerCustomer = LookUp[, c("Avg.Min.PerCustomer.2023", "Avg.Min.PerCustomer.2024", "Avg.Outage.Duration.2024")]
+Avg.min.PerCustomer
+
+```
+
